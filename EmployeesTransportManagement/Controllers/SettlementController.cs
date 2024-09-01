@@ -31,6 +31,19 @@ namespace EmployeesTransportManagement.Controllers
             if (settlement.Amount < 100)
             {
                 settlement.IsApproved = true;
+                if (settlement.Employee == null)
+                {
+                    settlement.Employee = await _context.Employees.FindAsync(settlement.EmployeeId);
+                }
+                if(settlement.Employee != null && !string.IsNullOrEmpty(settlement.Employee.Email))
+                {
+                    // Send an automatic approval email
+                    await new EmailService().SendEmailAsync(
+                        settlement.Employee.Email,
+                        "Settlement Approved",
+                        $"Your settlement of {settlement.Amount} RON has been automatically approved."
+                    );
+                }
             }
             _context.Settlements.Add(settlement);
             await _context.SaveChangesAsync();
@@ -83,9 +96,15 @@ namespace EmployeesTransportManagement.Controllers
             }
             await _context.SaveChangesAsync();
 
-            // Send email logic here
-
-            return RedirectToAction("PendingApprovals", "Settlement");
+            if(settlement.Employee == null)
+            {
+                settlement.Employee = await _context.Employees.FindAsync(settlement.EmployeeId);
+            }
+            if (settlement.Employee != null && !string.IsNullOrEmpty(settlement.Employee.Email))
+            {
+                await new EmailService().SendEmailAsync(settlement.Employee.Email, "Settlement Approval", $"Your settlement of {settlement.Amount} has been {(settlement.IsApproved ? "approved" : "rejected")}.");
+            }
+            return RedirectToAction(nameof(PendingApprovals));
         }
     }
 

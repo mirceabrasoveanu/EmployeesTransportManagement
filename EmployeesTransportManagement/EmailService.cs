@@ -7,15 +7,15 @@ namespace EmployeesTransportManagement
     {
         public async Task SendEmailAsync(string to, string subject, string body)
         {
-            using var client = new SmtpClient("smtp.example.com")
+            using var client = new SmtpClient("smtp.gmail.com", 587)
             {
-                Credentials = new NetworkCredential("your-email@example.com", "your-password"),
+                Credentials = new NetworkCredential("facultate22002@gmail.com", "hagy mchg zzub lgse"),
                 EnableSsl = true
             };
 
             var mailMessage = new MailMessage
             {
-                From = new MailAddress("your-email@example.com"),
+                From = new MailAddress("facultate22002@gmail.com"),
                 Subject = subject,
                 Body = body,
                 IsBodyHtml = true,
