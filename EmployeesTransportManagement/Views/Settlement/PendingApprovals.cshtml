@@ -1,0 +1,29 @@
+﻿@model IEnumerable<EmployeesTransportManagement.Models.Settlement>
+
+<h2>Pending Approvals</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Amount</th>
+            <th>Employee</th>
+            <th>Project</th>
+            <th>Date Submitted</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var settlement in Model)
+        {
+            <tr>
+                <td>@settlement.Amount</td>
+                <td>@settlement.Employee.Name</td>
+                <td>@settlement.Project.ProjectName</td>
+                <td>@settlement.DateSubmitted.ToShortDateString()</td>
+                <td>
+                    <a asp-action="Approve" asp-route-id="@settlement.SettlementId">Approve/Reject</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

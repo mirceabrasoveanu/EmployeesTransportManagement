@@ -1,0 +1,13 @@
+﻿@model EmployeesTransportManagement.Models.Settlement
+
+<form asp-action="Register" method="post">
+    <div>
+        <label>Amount:</label>
+        <input asp-for="Amount" />
+    </div>
+    <div>
+        <label>Project:</label>
+        <select asp-for="ProjectId" asp-items="ViewBag.Projects"></select>
+    </div>
+    <button type="submit">Register</button>
+</form>

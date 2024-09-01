@@ -1,0 +1,20 @@
+﻿@model EmployeesTransportManagement.Models.Settlement
+
+<h2>Approve Settlement</h2>
+
+<form asp-action="Approve" method="post">
+    <div>
+        <label>Amount:</label>
+        <span>@Model.Amount</span>
+    </div>
+    <div>
+        <label>Employee:</label>
+        <span>@Model.Employee.Name</span>
+    </div>
+    <div>
+        <label>Project:</label>
+        <span>@Model.Project.ProjectName</span>
+    </div>
+    <button type="submit" name="approval" value="approve">Approve</button>
+    <button type="submit" name="approval" value="reject">Reject</button>
+</form>
