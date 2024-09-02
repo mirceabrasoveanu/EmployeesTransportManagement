@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EmployeesTransportManagement.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240901185241_Updates2")]
-    partial class Updates2
+    [Migration("20240901220009_RecreatedMigration")]
+    partial class RecreatedMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -31,10 +31,6 @@ namespace EmployeesTransportManagement.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -43,7 +39,12 @@ namespace EmployeesTransportManagement.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("CoordinatorId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Coordinators");
                 });
@@ -54,15 +55,16 @@ namespace EmployeesTransportManagement.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Employees");
                 });
@@ -120,6 +122,47 @@ namespace EmployeesTransportManagement.Migrations
                     b.ToTable("Settlements");
                 });
 
+            modelBuilder.Entity("EmployeesTransportManagement.Models.User", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("EmployeesTransportManagement.Models.Coordinator", b =>
+                {
+                    b.HasOne("EmployeesTransportManagement.Models.User", "User")
+                        .WithMany("Coordinators")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("EmployeesTransportManagement.Models.Employee", b =>
+                {
+                    b.HasOne("EmployeesTransportManagement.Models.User", "User")
+                        .WithMany("Employees")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("EmployeesTransportManagement.Models.Project", b =>
                 {
                     b.HasOne("EmployeesTransportManagement.Models.Coordinator", "Coordinator")
@@ -163,6 +206,13 @@ namespace EmployeesTransportManagement.Migrations
             modelBuilder.Entity("EmployeesTransportManagement.Models.Project", b =>
                 {
                     b.Navigation("Settlements");
+                });
+
+            modelBuilder.Entity("EmployeesTransportManagement.Models.User", b =>
+                {
+                    b.Navigation("Coordinators");
+
+                    b.Navigation("Employees");
                 });
 #pragma warning restore 612, 618
         }

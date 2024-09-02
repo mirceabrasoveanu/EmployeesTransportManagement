@@ -6,6 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using EmployeesTransportManagement.Data;
 using EmployeesTransportManagement;
+using EmployeesTransportManagement.Models;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,6 +53,47 @@ builder.Services.AddAuthentication(options =>
         {
             // Custom logic after token is validated
             return Task.CompletedTask;
+        }
+    };
+    options.GetClaimsFromUserInfoEndpoint = true;
+    options.Scope.Add("openid");
+    options.Scope.Add("profile");
+    options.Scope.Add("email");
+    options.ClaimActions.MapUniqueJsonKey("email", "email");
+    options.Events = new OpenIdConnectEvents
+    {
+        OnUserInformationReceived = async context =>
+        {
+            // Get the ClaimsPrincipal object from the HttpContext
+            var claimsPrincipal = context.HttpContext.User;
+
+            // Access claims from the ClaimsPrincipal object
+            var claims = context.Principal.Claims;
+
+            // Check user email and map to a role claim
+            var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            
+            var dbContext = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
+            var user = await dbContext.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (user == null)
+            {
+                user = new User
+                {
+                    Email = email,
+                    Role = "Employee" // Default role
+                };
+
+                dbContext.Users.Add(user);
+                await dbContext.SaveChangesAsync();
+            }
+
+            context.Principal.AddIdentity(new ClaimsIdentity(new[]
+            {
+                            new Claim(ClaimTypes.Role, user.Role),
+                            new Claim("UserId", user.UserId.ToString())
+                        }));
+
+            await Task.CompletedTask;
         }
     };
 });

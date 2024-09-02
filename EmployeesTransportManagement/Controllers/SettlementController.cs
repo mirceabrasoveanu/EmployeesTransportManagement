@@ -1,9 +1,11 @@
 ﻿using EmployeesTransportManagement.Data;
 using EmployeesTransportManagement.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System.Drawing.Imaging;
+using System.Security.Claims;
 
 namespace EmployeesTransportManagement.Controllers
 {
@@ -16,17 +18,31 @@ namespace EmployeesTransportManagement.Controllers
             _context = context;
         }
 
+        [Authorize(Roles = "Employee")]
         [HttpGet]
         public IActionResult Register()
         {
             ViewBag.Projects = new SelectList(_context.Projects, "ProjectId", "ProjectName");
             return View(new Settlement());
         }
-
+        [Authorize(Roles = "Employee")]
         [HttpPost]
         public async Task<IActionResult> Register(Settlement settlement)
         {
-            settlement.EmployeeId = Guid.Parse("ee533cfe-625a-49e3-a4c6-c922537bfdbc");
+            //settlement.EmployeeId = Guid.Parse("ee533cfe-625a-49e3-a4c6-c922537bfdbc");
+            if (settlement.Employee == null)
+            {
+                var email = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+                if (!string.IsNullOrEmpty(email))
+                {
+                    settlement.Employee = await _context.Employees.Where(e => e.Email == email).FirstOrDefaultAsync();
+                }
+                if (settlement.Employee == null)
+                {
+                    return NotFound();
+                }
+                settlement.EmployeeId = settlement.Employee.Id;
+            }
             settlement.DateSubmitted = DateTime.Now;
             if (settlement.Amount < 100)
             {
@@ -35,7 +51,7 @@ namespace EmployeesTransportManagement.Controllers
                 {
                     settlement.Employee = await _context.Employees.FindAsync(settlement.EmployeeId);
                 }
-                if(settlement.Employee != null && !string.IsNullOrEmpty(settlement.Employee.Email))
+                if (settlement.Employee != null && !string.IsNullOrEmpty(settlement.Employee.Email))
                 {
                     // Send an automatic approval email
                     await new EmailService().SendEmailAsync(
@@ -47,22 +63,33 @@ namespace EmployeesTransportManagement.Controllers
             }
             _context.Settlements.Add(settlement);
             await _context.SaveChangesAsync();
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction(nameof(Register));
         }
+        [Authorize(Roles = "Coordinator")]
         [HttpGet]
         public async Task<IActionResult> PendingApprovals()
         {
             // Fetch settlements that are not yet approved
-            var coordId = Guid.Parse("ce624eb2-d0cb-43c6-a486-b6206ee2e99d");
+            //var coordId = Guid.Parse("ce624eb2-d0cb-43c6-a486-b6206ee2e99d");
+            var email = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+            Guid? coordId = null;
+            if(!string.IsNullOrEmpty(email))
+            {
+                coordId = _context.Coordinators.Where(e => e.Email == email).FirstOrDefault()?.CoordinatorId;
+            }
+            if (coordId == null)
+            {
+                return NotFound();
+            }
             var pendingSettlements = await _context.Settlements
-                .Include(s => s.Employee)
-                .Include(s => s.Project)
-                .Where(s => !s.IsApproved && s.Project.CoordinatorId == coordId && !s.IsRejected)
-                .ToListAsync();
+            .Include(s => s.Employee)
+            .Include(s => s.Project)
+            .Where(s => !s.IsApproved && s.Project.CoordinatorId == coordId.Value && !s.IsRejected)
+            .ToListAsync();
 
             return View(pendingSettlements);
         }
-
+        [Authorize(Roles = "Coordinator")]
         [HttpGet]
         public async Task<IActionResult> Approve(Guid id)
         {
@@ -90,13 +117,13 @@ namespace EmployeesTransportManagement.Controllers
             }
 
             settlement.IsApproved = approval == "approve";
-            if(settlement.IsApproved == false)
+            if (settlement.IsApproved == false)
             {
                 settlement.IsRejected = true;
             }
             await _context.SaveChangesAsync();
 
-            if(settlement.Employee == null)
+            if (settlement.Employee == null)
             {
                 settlement.Employee = await _context.Employees.FindAsync(settlement.EmployeeId);
             }
